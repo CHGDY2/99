@@ -1,18 +1,17 @@
--- Free.lua
-local TweenService = game:GetService("TweenService")
-local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
+-- Free.lua (แมพ 99 คืนในป่า, ID: 4)
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
 local Humanoid = Character:WaitForChild("Humanoid")
 
--- สร้าง ScreenGui
+-- GUI หลัก
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "RuidHob_GUI"
 ScreenGui.Parent = game.CoreGui
 
--- วงกลมหลักชื่อค่าย
+-- ปุ่มหลักวงกลม
 local MainButton = Instance.new("TextButton")
 MainButton.Size = UDim2.new(0,120,0,120)
 MainButton.Position = UDim2.new(0,50,0,50)
@@ -20,9 +19,8 @@ MainButton.Text = "Ruid Hob"
 MainButton.TextScaled = true
 MainButton.Parent = ScreenGui
 MainButton.BackgroundColor3 = Color3.fromRGB(0,255,255)
-MainButton.AutoButtonColor = true
 
--- ไล่สีตัวอักษรชื่อค่าย
+-- ไล่สีขยับ
 spawn(function()
     local hue = 0
     while MainButton.Parent do
@@ -32,89 +30,93 @@ spawn(function()
     end
 end)
 
--- กล่อง Scrollable สำหรับปุ่มเมนู
-local Frame = Instance.new("Frame")
-Frame.Size = UDim2.new(0,150,0,400)
+-- Scrollable Menu
+local Frame = Instance.new("ScrollingFrame")
+Frame.Size = UDim2.new(0,220,0,400)
 Frame.Position = UDim2.new(0,200,0,50)
 Frame.BackgroundTransparency = 0.3
 Frame.BackgroundColor3 = Color3.fromRGB(50,50,50)
+Frame.CanvasSize = UDim2.new(0,0,0,0)
+Frame.ScrollBarThickness = 8
 Frame.Parent = ScreenGui
 
 local UIListLayout = Instance.new("UIListLayout")
 UIListLayout.Parent = Frame
 UIListLayout.Padding = UDim.new(0,5)
 
--- ฟังก์ชันเมนู
-local MenuFunctions = {
-    -- หมวดหลัง / Movement
-    Fly = function()
-        print("บินแล้ว")
-        -- ตัวอย่าง fly (สามารถปรับตามเกมจริง)
-        local BodyVelocity = Instance.new("BodyVelocity")
-        BodyVelocity.Velocity = Vector3.new(0,50,0)
-        BodyVelocity.MaxForce = Vector3.new(0,4000,0)
-        BodyVelocity.Parent = Character.PrimaryPart
-        game:GetService("Debris"):AddItem(BodyVelocity,1)
-    end,
-    Run = function()
-        print("วิ่งแล้ว")
-        Humanoid.WalkSpeed = 50 -- ปรับความเร็ว
-    end,
-    AutoDiamond = function()
-        print("ฟาร์มเพชรแล้ว")
-        -- ตัวอย่าง loop เก็บไอเทมในพื้นที่ใกล้เคียง
-        spawn(function()
-            while true do
-                for _,item in pairs(workspace:GetChildren()) do
-                    if item.Name == "Diamond" and (item.Position - Character.PrimaryPart.Position).Magnitude < 20 then
-                        item.CFrame = Character.PrimaryPart.CFrame
-                    end
+-- ฟังก์ชัน Auto / เสกของ / Menu
+local MenuFunctions = {}
+
+-- หมวดหลัง
+MenuFunctions["บิน"] = function()
+    Humanoid.WalkSpeed = 100
+    print("บินแล้ว")
+end
+MenuFunctions["วิ่ง"] = function()
+    Humanoid.WalkSpeed = 50
+    print("วิ่งเร็วแล้ว")
+end
+MenuFunctions["ฟาร์มเพชร"] = function()
+    print("ฟาร์มเพชรอัตโนมัติ")
+    spawn(function()
+        while true do
+            for _,item in pairs(ReplicatedStorage:GetChildren()) do
+                if item:IsA("Tool") then
+                    item:Clone().Parent = LocalPlayer.Backpack
                 end
-                wait(0.5)
             end
-        end)
-    end,
-    AutoTree = function()
-        print("Auto ตัดต้นไม้แล้ว")
-        -- ตัวอย่าง loop ตัดต้นไม้
-        spawn(function()
-            while true do
-                for _,tree in pairs(workspace:GetChildren()) do
-                    if tree.Name == "Tree" and (tree.Position - Character.PrimaryPart.Position).Magnitude < 20 then
-                        tree:Destroy()
-                    end
+            wait(0.5)
+        end
+    end)
+end
+MenuFunctions["Auto ตัดต้นไม้"] = function()
+    print("Auto ตัดต้นไม้")
+    spawn(function()
+        while true do
+            for _,obj in pairs(workspace:GetChildren()) do
+                if obj.Name:find("Tree") then
+                    obj:Destroy()
                 end
-                wait(1)
             end
-        end)
-    end,
-    -- หมวดเสกของ
-    SpawnWood = function() print("เสกไม้แล้ว") end,
-    SpawnCoal = function() print("เสกถ่านแล้ว") end,
-    SpawnIron = function() print("เสกเหล็กแล้ว") end,
-    SpawnGun = function() print("เสกปืนแล้ว") end,
-    -- หมวดออโต้
-    AutoKid = function() print("Auto หาเด็กแล้ว") end,
-    AutoFish = function() print("Auto ตกปลาแล้ว") end,
-    AutoPet = function() print("Auto สัตว์เลี้ยงแล้ว") end,
-    AutoEvent = function() print("Auto ทำ Event แล้ว") end,
-    AutoAttack = function()
-        print("Auto ตีทุกอย่างแล้ว")
-        -- ตัวอย่างทำ damage มอนสเตอร์ใกล้
-        spawn(function()
-            while true do
-                for _,monster in pairs(workspace:GetChildren()) do
-                    if monster:IsA("Model") and (monster.PrimaryPart.Position - Character.PrimaryPart.Position).Magnitude < 10 then
-                        if monster:FindFirstChild("Humanoid") then
-                            monster.Humanoid:TakeDamage(10)
-                        end
-                    end
+            wait(0.5)
+        end
+    end)
+end
+
+-- หมวดเสกของ (ID:4 ใช้เป็นตัวอ้างอิง)
+MenuFunctions["เสกของทั้งหมด"] = function()
+    print("เสกของทั้งหมด (ID:4)")
+    for _,item in pairs(ReplicatedStorage:GetChildren()) do
+        if item:IsA("Tool") then
+            item:Clone().Parent = LocalPlayer.Backpack
+        end
+    end
+end
+
+-- หมวดออโต้
+MenuFunctions["Auto หาเด็ก"] = function()
+    print("Auto หาเด็ก")
+end
+MenuFunctions["Auto ตกปลา"] = function()
+    print("Auto ตกปลา")
+end
+MenuFunctions["Auto สัตว์เลี้ยง"] = function()
+    print("Auto สัตว์เลี้ยง")
+end
+MenuFunctions["Auto ตีทุกอย่าง"] = function()
+    print("Auto ตีทุกอย่าง")
+    spawn(function()
+        while true do
+            for _,obj in pairs(workspace:GetChildren()) do
+                if obj:FindFirstChild("Humanoid") then
+                    local hum = obj:FindFirstChild("Humanoid")
+                    hum.Health = hum.Health - 50 -- โหดขึ้นมาก
                 end
-                wait(1)
             end
-        end)
-    end,
-}
+            wait(0.2)
+        end
+    end)
+end
 
 -- สร้างปุ่มเมนู
 for name, func in pairs(MenuFunctions) do
@@ -126,6 +128,11 @@ for name, func in pairs(MenuFunctions) do
     btn.Parent = Frame
     btn.MouseButton1Click:Connect(func)
 end
+
+-- ปรับ CanvasSize ให้ Scrollable
+UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+    Frame.CanvasSize = UDim2.new(0,0,0,UIListLayout.AbsoluteContentSize.Y)
+end)
 
 -- ปุ่มปิด GUI
 local CloseButton = Instance.new("TextButton")
